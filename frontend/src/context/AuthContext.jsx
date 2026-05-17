@@ -114,9 +114,14 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
-    intentionalLogout.current = true;
-    await supabase.auth.signOut();
-    router.push('/auth/login');
+    try {
+      intentionalLogout.current = true;
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      window.location.href = '/auth/login';
+    }
   };
 
   // Combined loading = we're still figuring out session OR role
