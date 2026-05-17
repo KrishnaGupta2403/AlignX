@@ -113,15 +113,25 @@ export function AuthProvider({ children }) {
     return supabase.auth.signInWithPassword({ email, password });
   };
 
-  const logout = async () => {
+  const logout = () => {
+    intentionalLogout.current = true;
+    
+    // 1. Forcefully clear any Supabase session tokens from local storage instantly
     try {
-      intentionalLogout.current = true;
-      await supabase.auth.signOut({ scope: 'local' });
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      window.location.href = '/auth/login';
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (e) {
+      console.warn('Could not clear localStorage:', e);
     }
+
+    // 2. Fire-and-forget the Supabase signout (do not await, to avoid getting stuck in network queues)
+    supabase.auth.signOut({ scope: 'local' }).catch(err => console.error('Logout error:', err));
+
+    // 3. Immediately bounce the user back to the login screen
+    window.location.href = '/auth/login';
   };
 
   // Combined loading = we're still figuring out session OR role
