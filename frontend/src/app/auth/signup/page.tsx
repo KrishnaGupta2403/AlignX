@@ -40,7 +40,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { full_name: name },
+        data: { name: name },
       },
     });
 
@@ -57,10 +57,10 @@ export default function SignupPage() {
     <main className="relative min-h-screen w-full overflow-hidden bg-[#0A0510] text-white font-sans flex items-center justify-center">
       <div className="absolute inset-0 z-0">
         <DotField
-          dotRadius={1.5}
+          dotRadius={2}
           dotSpacing={14}
           bulgeStrength={67}
-          glowRadius={160}
+          glowRadius={200}
           sparkle={false}
           waveAmplitude={0}
           cursorRadius={500}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import DotField from '@/components/backgrounds/DotField';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
@@ -14,6 +14,15 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('expired') === 'true') {
+        setError('Your session has expired. Please sign in again.');
+      }
+    }
+  }, []);
+
   const handleLogin = async () => {
     if (!email || !password) {
       setError('Please fill in all fields.');
@@ -22,14 +31,60 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      setError(error.message);
+    if (authError) {
+      setError(authError.message);
       setLoading(false);
-    } else {
-      router.push('/dashboard');
+      return;
     }
+
+    if (!data?.user) {
+      setError('Login failed. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    // --- Determine the user's role ---
+    let userRole = null;
+
+    // 1. Check user_metadata first (instant, no DB call)
+    userRole = data.user.user_metadata?.role || null;
+    console.log('[Login] user_metadata role:', userRole);
+
+    // 2. If not in metadata, query the profiles table
+    if (!userRole) {
+      const { data: pData, error: pError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (!pError && pData?.role) {
+        userRole = pData.role;
+        console.log('[Login] profiles table role:', userRole);
+      } else {
+        console.warn('[Login] profiles query error or no role:', pError?.message);
+      }
+    }
+
+    // 3. Final fallback
+    if (!userRole) {
+      userRole = 'employee';
+      console.warn('[Login] No role found anywhere. Defaulting to employee.');
+    }
+
+    console.log('[Login] Final role for redirect:', userRole);
+
+    // --- Redirect based on role ---
+    if (userRole === 'admin') {
+      router.push('/admin/dashboard');
+    } else if (userRole === 'manager') {
+      router.push('/manager/dashboard');
+    } else {
+      router.push('/employee/dashboard');
+    }
+    // Note: don't call setLoading(false) here since we're navigating away
   };
 
   return (
@@ -75,6 +130,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#A855F7]/50 focus:border-transparent transition-all"
                 placeholder="Email Address"
               />
@@ -88,6 +144,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                 className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-[#A855F7]/50 focus:border-transparent transition-all"
                 placeholder="Password"
               />
