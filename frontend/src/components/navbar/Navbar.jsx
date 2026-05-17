@@ -40,7 +40,8 @@ export default function Navbar() {
         {/* Mini Avatar for top bar */}
         <div className="flex items-center gap-3 pl-4 border-l border-white/10">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-medium text-white">{user?.user_metadata?.full_name?.split(' ')[0] || 'User'}</p>
+            <p className="text-sm font-medium text-white">{user?.user_metadata?.name?.split(' ')[0] || 'User'}</p>
+            <p className="text-xs text-white/50 truncate max-w-[120px]">{user?.email}</p>
           </div>
         </div>
 

@@ -10,7 +10,9 @@ import {
   Target, 
   CheckSquare, 
   FileText,
-  LogOut
+  LogOut,
+  BarChart3,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -22,17 +24,20 @@ export default function Sidebar() {
   const roleLinks = {
     admin: [
       { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+      { name: 'Analytics Dashboard', path: '/admin/analytics', icon: BarChart3 },
+      { name: 'System Reports', path: '/admin/reports', icon: FileText },
       { name: 'Manage Users', path: '/admin/users', icon: Users },
-      { name: 'System Logs', path: '/admin/logs', icon: Settings },
+      { name: 'Audit Trail', path: '/admin/audit', icon: ShieldCheck },
     ],
     manager: [
       { name: 'Dashboard', path: '/manager/dashboard', icon: LayoutDashboard },
-      { name: 'Team Goals', path: '/manager/team-goals', icon: Target },
-      { name: 'Approvals', path: '/manager/approvals', icon: CheckSquare },
+      { name: 'My Team\'s Goals', path: '/manager/approvals', icon: Target },
+      { name: 'Team Check-Ins', path: '/manager/checkins', icon: CheckSquare },
+      { name: 'Reports & Analytics', path: '/manager/reports', icon: FileText },
     ],
     employee: [
-      { name: 'Dashboard', path: '/employee/dashboard', icon: LayoutDashboard },
-      { name: 'My Goals', path: '/employee/goals', icon: Target },
+      { name: 'My Goals', path: '/employee/dashboard', icon: Target },
+      { name: 'Quarterly Check-In', path: '/employee/checkin', icon: CheckSquare },
       { name: 'Reports', path: '/employee/reports', icon: FileText },
     ],
   };
@@ -50,10 +55,10 @@ export default function Sidebar() {
       {/* User Info Profile Area */}
       <div className="p-6 border-b border-white/5">
         <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#A855F7] to-[#B497CF] flex items-center justify-center text-white font-bold text-xl mb-3 shadow-[0_0_15px_rgba(168,85,247,0.5)]">
-          {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+          {user?.user_metadata?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
         </div>
         <h3 className="text-white font-medium truncate">
-          {user?.user_metadata?.full_name || 'User'}
+          {user?.user_metadata?.name || 'User'}
         </h3>
         <p className="text-[#A855F7] text-xs uppercase tracking-wider font-semibold mt-1">
           {role}

@@ -36,13 +36,35 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await (supabase.auth as any).signUp({
       email,
       password,
       options: {
-        data: { name: name },
+        data: { 
+          name: name,
+          email: email
+        },
       },
     });
+
+    if (!error && data?.user) {
+      try {
+        // Direct upsert to ensure the email is recorded in the profiles table if RLS/policies allow it
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            name: name,
+            email: email,
+            role: 'employee'
+          });
+        if (profileError) {
+          console.warn('[Signup] Profile upsert warning (may be handled by DB trigger or restricted by RLS):', profileError.message);
+        }
+      } catch (upsertErr) {
+        console.error('[Signup] Direct profile upsert error:', upsertErr);
+      }
+    }
 
     setLoading(false);
 
