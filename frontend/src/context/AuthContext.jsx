@@ -18,10 +18,18 @@ export function AuthProvider({ children }) {
   const router = useRouter();
   const intentionalLogout = useRef(false);
 
+  const resolvedUserId = useRef(null);
+
   // Fetch role STRICTLY from Supabase — no defaults, no fallbacks
   const fetchProfileRole = async (userObj) => {
     if (!userObj?.id) return null;
-    setRoleLoading(true);
+    
+    const isSilentlyRefreshing = resolvedUserId.current === userObj.id;
+    
+    // Only show loading screen if this is a fresh login/initial load
+    if (!isSilentlyRefreshing) {
+      setRoleLoading(true);
+    }
 
     try {
       const { data, error } = await supabase
@@ -36,12 +44,15 @@ export function AuthProvider({ children }) {
       }
 
       console.log('[AuthContext] Role from Supabase:', data?.role);
+      resolvedUserId.current = userObj.id;
       return data?.role ?? null;
     } catch (err) {
       console.error('[AuthContext] Unexpected error fetching role:', err);
       return null;
     } finally {
-      setRoleLoading(false);
+      if (!isSilentlyRefreshing) {
+        setRoleLoading(false);
+      }
     }
   };
 

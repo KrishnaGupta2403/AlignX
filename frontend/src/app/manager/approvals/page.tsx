@@ -32,7 +32,7 @@ export default function ApprovalsPage() {
     if (user?.id) {
       fetchTeamSheets(user.id);
     }
-  }, [user, fetchTeamSheets]);
+  }, [user?.id, fetchTeamSheets]);
 
   // Handlers
   const handleReviewClick = async (sheet: any) => {

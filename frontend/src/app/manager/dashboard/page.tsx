@@ -53,7 +53,7 @@ export default function ManagerDashboardPage() {
       };
       fetchTeamSize();
     }
-  }, [user, fetchTeamSheets]);
+  }, [user?.id, fetchTeamSheets]);
 
   // Load team check-in submission and progress stats dynamically
   useEffect(() => {
