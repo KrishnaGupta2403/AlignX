@@ -11,6 +11,7 @@ import { ACTIVE_QUARTER } from '@/utils/constants';
 import { getAchievements } from '@/services/achievementService';
 import ManagerLayout from '@/layouts/ManagerLayout';
 import { supabase } from '@/lib/supabase';
+import BorderGlow from '@/components/backgrounds/BorderGlow';
 
 export default function ManagerDashboardPage() {
   const { user } = useAuth();
@@ -191,33 +192,66 @@ export default function ManagerDashboardPage() {
         {!loading && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Team Size */}
-            <div className="bg-[#0A0510]/60 backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-              <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Users size={120} />
+            <BorderGlow
+              edgeSensitivity={20}
+              glowColor="200 80 70"
+              backgroundColor="rgba(10, 5, 16, 0.6)"
+              borderRadius={16}
+              glowRadius={40}
+              glowIntensity={1.0}
+              colors={['#38bdf8', '#0ea5e9', '#0284c7']}
+              fillOpacity={0.1}
+            >
+              <div className="p-6 h-full relative overflow-hidden group">
+                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Users size={120} />
+                </div>
+                <div className="text-white/50 text-sm font-semibold tracking-wider uppercase mb-2">Team Size</div>
+                <div className="text-4xl font-bold text-white">{teamSize} {teamSize === 1 ? 'Employee' : 'Employees'}</div>
               </div>
-              <div className="text-white/50 text-sm font-semibold tracking-wider uppercase mb-2">Team Size</div>
-              <div className="text-4xl font-bold text-white">{teamSize} {teamSize === 1 ? 'Employee' : 'Employees'}</div>
-            </div>
+            </BorderGlow>
 
             {/* Pending Approvals */}
-            <div className="bg-[#0A0510]/60 backdrop-blur-md border border-amber-500/10 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-              <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-amber-500">
-                <Clock size={120} />
+            <BorderGlow
+              edgeSensitivity={20}
+              glowColor="40 80 70"
+              backgroundColor="rgba(10, 5, 16, 0.6)"
+              borderRadius={16}
+              glowRadius={40}
+              glowIntensity={1.0}
+              colors={['#f59e0b', '#fbbf24', '#d97706']}
+              fillOpacity={0.1}
+            >
+              <div className="p-6 h-full relative overflow-hidden group">
+                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-amber-500">
+                  <Clock size={120} />
+                </div>
+                <div className="text-amber-400/80 text-sm font-semibold tracking-wider uppercase mb-2">Pending Approvals</div>
+                <div className="text-4xl font-bold text-amber-400">{stats?.pending || 0} Sheets</div>
               </div>
-              <div className="text-amber-400/80 text-sm font-semibold tracking-wider uppercase mb-2">Pending Approvals</div>
-              <div className="text-4xl font-bold text-amber-400">{stats?.pending || 0} Sheets</div>
-            </div>
+            </BorderGlow>
 
             {/* Average Team Progress */}
-            <div className="bg-[#0A0510]/60 backdrop-blur-md border border-[#A855F7]/10 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-              <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-[#A855F7]">
-                <Target size={120} />
+            <BorderGlow
+              edgeSensitivity={20}
+              glowColor="280 80 70"
+              backgroundColor="rgba(10, 5, 16, 0.6)"
+              borderRadius={16}
+              glowRadius={40}
+              glowIntensity={1.0}
+              colors={['#a855f7', '#c084fc', '#8b5cf6']}
+              fillOpacity={0.1}
+            >
+              <div className="p-6 h-full relative overflow-hidden group">
+                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-[#A855F7]">
+                  <Target size={120} />
+                </div>
+                <div className="text-[#A855F7] text-sm font-semibold tracking-wider uppercase mb-2">Average Team Progress</div>
+                <div className="text-4xl font-bold text-white font-mono flex items-baseline gap-1">
+                  {loadingCheckins ? <Loader2 className="animate-spin text-white text-xs" size={24} /> : `${checkinStats.avgProgress}%`}
+                </div>
               </div>
-              <div className="text-[#A855F7] text-sm font-semibold tracking-wider uppercase mb-2">Average Team Progress</div>
-              <div className="text-4xl font-bold text-white font-mono flex items-baseline gap-1">
-                {loadingCheckins ? <Loader2 className="animate-spin text-white text-xs" size={24} /> : `${checkinStats.avgProgress}%`}
-              </div>
-            </div>
+            </BorderGlow>
           </div>
         )}
 
@@ -231,53 +265,86 @@ export default function ManagerDashboardPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Submitted Card */}
-              <div className="bg-[#0A0510]/60 backdrop-blur-md border border-emerald-500/10 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-emerald-500">
-                  <CheckCircle2 size={120} />
+              <BorderGlow
+                edgeSensitivity={20}
+                glowColor="140 80 70"
+                backgroundColor="rgba(10, 5, 16, 0.6)"
+                borderRadius={16}
+                glowRadius={40}
+                glowIntensity={1.0}
+                colors={['#10b981', '#34d399', '#059669']}
+                fillOpacity={0.1}
+              >
+                <div className="p-6 h-full relative overflow-hidden group">
+                  <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-emerald-500">
+                    <CheckCircle2 size={120} />
+                  </div>
+                  <div className="text-emerald-400/80 text-sm font-semibold tracking-wider uppercase mb-2">Check-ins Submitted</div>
+                  <div className="text-4xl font-bold text-white font-mono">
+                    {loadingCheckins ? <Loader2 className="animate-spin text-white" size={24} /> : checkinStats.submitted}
+                  </div>
+                  <p className="text-[20px] text-white/40 mt-2">Active check-ins logged for approved goal sheets</p>
                 </div>
-                <div className="text-emerald-400/80 text-sm font-semibold tracking-wider uppercase mb-2">Check-ins Submitted</div>
-                <div className="text-4xl font-bold text-white font-mono">
-                  {loadingCheckins ? <Loader2 className="animate-spin text-white" size={24} /> : checkinStats.submitted}
-                </div>
-                <p className="text-[11px] text-white/40 mt-2">Active check-ins logged for approved goal sheets</p>
-              </div>
+              </BorderGlow>
 
               {/* Pending Card */}
-              <div className="bg-[#0A0510]/60 backdrop-blur-md border border-amber-500/10 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-amber-500">
-                  <Clock size={120} />
+              <BorderGlow
+                edgeSensitivity={20}
+                glowColor="40 80 70"
+                backgroundColor="rgba(10, 5, 16, 0.6)"
+                borderRadius={16}
+                glowRadius={40}
+                glowIntensity={1.0}
+                colors={['#f59e0b', '#fbbf24', '#d97706']}
+                fillOpacity={0.1}
+              >
+                <div className="p-6 h-full relative overflow-hidden group">
+                  <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-amber-500">
+                    <Clock size={120} />
+                  </div>
+                  <div className="text-amber-400/80 text-sm font-semibold tracking-wider uppercase mb-2">Pending Check-in</div>
+                  <div className="text-4xl font-bold text-white font-mono">
+                    {loadingCheckins ? <Loader2 className="animate-spin text-white" size={24} /> : checkinStats.pending}
+                  </div>
+                  <p className="text-[20px] text-white/40 mt-2">Approved goal sheets waiting for check-in submission</p>
                 </div>
-                <div className="text-amber-400/80 text-sm font-semibold tracking-wider uppercase mb-2">Pending Check-in</div>
-                <div className="text-4xl font-bold text-white font-mono">
-                  {loadingCheckins ? <Loader2 className="animate-spin text-white" size={24} /> : checkinStats.pending}
-                </div>
-                <p className="text-[11px] text-white/40 mt-2">Approved goal sheets waiting for check-in submission</p>
-              </div>
+              </BorderGlow>
 
               {/* Average Progress Card */}
-              <div className="bg-[#0A0510]/60 backdrop-blur-md border border-[#A855F7]/10 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-                <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-[#A855F7]">
-                  <Target size={120} />
-                </div>
-                <div className="text-[#A855F7] text-sm font-semibold tracking-wider uppercase mb-2">Team Average Progress</div>
-                <div className="text-4xl font-bold text-white font-mono flex items-baseline gap-1">
-                  {loadingCheckins ? <Loader2 className="animate-spin text-white text-xs" size={24} /> : `${checkinStats.avgProgress}%`}
-                </div>
-                <div className="mt-3">
-                  <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        checkinStats.avgProgress >= 71 
-                          ? 'bg-emerald-400' 
-                          : checkinStats.avgProgress >= 41 
-                          ? 'bg-amber-400' 
-                          : 'bg-rose-400'
-                      }`} 
-                      style={{ width: `${checkinStats.avgProgress}%` }}
-                    />
+              <BorderGlow
+                edgeSensitivity={20}
+                glowColor="280 80 70"
+                backgroundColor="rgba(10, 5, 16, 0.6)"
+                borderRadius={16}
+                glowRadius={40}
+                glowIntensity={1.0}
+                colors={['#a855f7', '#c084fc', '#8b5cf6']}
+                fillOpacity={0.1}
+              >
+                <div className="p-6 h-full relative overflow-hidden group">
+                  <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-[#A855F7]">
+                    <Target size={120} />
+                  </div>
+                  <div className="text-[#A855F7] text-sm font-semibold tracking-wider uppercase mb-2">Team Average Progress</div>
+                  <div className="text-4xl font-bold text-white font-mono flex items-baseline gap-1">
+                    {loadingCheckins ? <Loader2 className="animate-spin text-white text-xs" size={24} /> : `${checkinStats.avgProgress}%`}
+                  </div>
+                  <div className="mt-3">
+                    <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          checkinStats.avgProgress >= 71 
+                            ? 'bg-emerald-400' 
+                            : checkinStats.avgProgress >= 41 
+                            ? 'bg-amber-400' 
+                            : 'bg-rose-400'
+                        }`} 
+                        style={{ width: `${checkinStats.avgProgress}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              </BorderGlow>
             </div>
           </div>
         )}

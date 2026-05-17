@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import AdminLayout from '@/layouts/AdminLayout';
 import Link from 'next/link';
+import BorderGlow from '@/components/backgrounds/BorderGlow';
 import { 
   Users, 
   Target, 
@@ -37,26 +38,26 @@ export default function AdminDashboardPage() {
   const [unlockingId, setUnlockingId] = useState<string | null>(null);
 
   const loadStats = async () => {
-    try {
-      setLoading(true);
-      const data = await getAdminOverviewStats();
-      setStats(data);
-    } catch (err) {
-      console.error("Failed to load admin stats:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    if (!stats) setLoading(true); // ← only show loading if no data yet
+    const data = await getAdminOverviewStats();
+    setStats(data);
+  } catch (err) {
+    console.error("Failed to load admin stats:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const loadGoalSheets = async () => {
-    try {
-      setSheetsLoading(true);
-      const data = await getAdminSystemReportsData();
-      console.log('Sheets:', data.map(s => ({ 
-  name: s.employeeName, 
-  is_locked: s.is_locked,
-  status: s.status 
-})));
+ const loadGoalSheets = async () => {
+  try {
+    if (!sheets.length) setSheetsLoading(true); // ← only show loading if no data yet
+    const data = await getAdminSystemReportsData();
+      console.log('Sheets:', data.map((s: any) => ({ 
+        name: s.employeeName, 
+        is_locked: s.is_locked,
+        status: s.status 
+      })));
       setSheets(data);
       setFilteredSheets(data);
     } catch (err) {
@@ -66,10 +67,17 @@ export default function AdminDashboardPage() {
     }
   };
 
-  useEffect(() => {
-    loadStats();
-    loadGoalSheets();
-  }, []);
+ useEffect(() => {
+  loadStats();
+  loadGoalSheets();
+
+  // Prevent refetch on tab switch
+  const handleVisibility = () => {
+    if (document.visibilityState === 'visible' && stats && sheets.length) return;
+  };
+  document.addEventListener('visibilitychange', handleVisibility);
+  return () => document.removeEventListener('visibilitychange', handleVisibility);
+}, []);
 
   // Filter sheets by query search
   useEffect(() => {
@@ -78,7 +86,7 @@ export default function AdminDashboardPage() {
       setFilteredSheets(sheets);
     } else {
       setFilteredSheets(
-        sheets.filter(s => 
+        sheets.filter((s: any) => 
           s.employeeName.toLowerCase().includes(q) || 
           s.employeeEmail.toLowerCase().includes(q) ||
           s.status.toLowerCase().includes(q)
@@ -95,9 +103,9 @@ export default function AdminDashboardPage() {
       await unlockGoalSheet(sheetId, user.id);
       
       // Update state locally
-      setSheets(prev => prev.map(s => {
+      setSheets(prev => prev.map((s: any) => {
         if (s.id === sheetId) {
-          return { ...s, isLocked: false, status: 'Draft' };
+          return { ...s, isLocked: false, is_locked: false, status: 'Draft' };
         }
         return s;
       }));
@@ -189,47 +197,80 @@ export default function AdminDashboardPage() {
         {/* Global Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Card 1: Total Users */}
-          <div className="bg-[#0A0510]/60 backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-            <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Users size={120} />
+          <BorderGlow
+            edgeSensitivity={20}
+            glowColor="200 80 70"
+            backgroundColor="rgba(10, 5, 16, 0.6)"
+            borderRadius={16}
+            glowRadius={40}
+            glowIntensity={1.0}
+            colors={['#38bdf8', '#0ea5e9', '#0284c7']}
+            fillOpacity={0.1}
+          >
+            <div className="p-6 h-full relative overflow-hidden group">
+              <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                <Users size={120} />
+              </div>
+              <div className="text-white/50 text-xs font-semibold tracking-wider uppercase mb-2">Total Users</div>
+              <div className="text-4xl font-extrabold text-white font-mono">
+                {loading ? <Loader2 size={24} className="animate-spin text-white/40" /> : stats?.totalUsers || 0}
+              </div>
+              <p className="text-[11px] text-white/40 mt-4">Total registered employee and manager accounts</p>
             </div>
-            <div className="text-white/50 text-xs font-semibold tracking-wider uppercase mb-2">Total Users</div>
-            <div className="text-4xl font-extrabold text-white font-mono">
-              {loading ? <Loader2 size={24} className="animate-spin text-white/40" /> : stats?.totalUsers || 0}
-            </div>
-            <p className="text-[11px] text-white/40 mt-4">Total registered employee and manager accounts</p>
-          </div>
+          </BorderGlow>
 
           {/* Card 2: System Completion */}
-          <div className="bg-[#0A0510]/60 backdrop-blur-md border border-white/5 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-            <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-emerald-500">
-              <Target size={120} />
-            </div>
-            <div className="text-white/50 text-xs font-semibold tracking-wider uppercase mb-2">System-wide Completion Rate</div>
-            <div className="text-4xl font-extrabold text-emerald-400 font-mono">
-              {loading ? <Loader2 size={24} className="animate-spin text-white/40" /> : `${stats?.completionRate || 0}%`}
-            </div>
-            <div className="mt-3">
-              <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className="h-full bg-emerald-400 rounded-full transition-all duration-500" 
-                  style={{ width: `${stats?.completionRate || 0}%` }}
-                />
+          <BorderGlow
+            edgeSensitivity={20}
+            glowColor="140 80 70"
+            backgroundColor="rgba(10, 5, 16, 0.6)"
+            borderRadius={16}
+            glowRadius={40}
+            glowIntensity={1.0}
+            colors={['#10b981', '#34d399', '#059669']}
+            fillOpacity={0.1}
+          >
+            <div className="p-6 h-full relative overflow-hidden group">
+              <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-emerald-500">
+                <Target size={120} />
+              </div>
+              <div className="text-white/50 text-xs font-semibold tracking-wider uppercase mb-2">System-wide Completion Rate</div>
+              <div className="text-4xl font-extrabold text-emerald-400 font-mono">
+                {loading ? <Loader2 size={24} className="animate-spin text-white/40" /> : `${stats?.completionRate || 0}%`}
+              </div>
+              <div className="mt-3">
+                <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="h-full bg-emerald-400 rounded-full transition-all duration-500" 
+                    style={{ width: `${stats?.completionRate || 0}%` }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
+          </BorderGlow>
 
           {/* Card 3: Pending Approvals */}
-          <div className="bg-[#0A0510]/60 backdrop-blur-md border border-amber-500/10 rounded-2xl p-6 shadow-xl relative overflow-hidden group">
-            <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-amber-500">
-              <Clock size={120} />
+          <BorderGlow
+            edgeSensitivity={20}
+            glowColor="40 80 70"
+            backgroundColor="rgba(10, 5, 16, 0.6)"
+            borderRadius={16}
+            glowRadius={40}
+            glowIntensity={1.0}
+            colors={['#f59e0b', '#fbbf24', '#d97706']}
+            fillOpacity={0.1}
+          >
+            <div className="p-6 h-full relative overflow-hidden group">
+              <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity text-amber-500">
+                <Clock size={120} />
+              </div>
+              <div className="text-white/50 text-xs font-semibold tracking-wider uppercase mb-2">Pending Approvals</div>
+              <div className="text-4xl font-extrabold text-amber-400 font-mono">
+                {loading ? <Loader2 size={24} className="animate-spin text-white/40" /> : stats?.totalPending || 0}
+              </div>
+              <p className="text-[11px] text-white/40 mt-4">Goal sheets awaiting active manager verification</p>
             </div>
-            <div className="text-white/50 text-xs font-semibold tracking-wider uppercase mb-2">Pending Approvals</div>
-            <div className="text-4xl font-extrabold text-amber-400 font-mono">
-              {loading ? <Loader2 size={24} className="animate-spin text-white/40" /> : stats?.totalPending || 0}
-            </div>
-            <p className="text-[11px] text-white/40 mt-4">Goal sheets awaiting active manager verification</p>
-          </div>
+          </BorderGlow>
         </div>
 
         {/* Dynamic Goal Sheet Lock/Unlock Actions Panel */}

@@ -6,7 +6,7 @@ import { useGoals } from '@/hooks/useGoals';
 import { useCheckins } from '@/hooks/useCheckins';
 import { calculateProgress } from '@/services/progressService';
 import { logAudit } from '@/services/auditService';
-import { ACTIVE_QUARTER } from '@/utils/constants';
+import { useCycle } from '@/hooks/useCycle';
 import { 
   Calendar, 
   Target, 
@@ -30,10 +30,17 @@ export default function CheckinPage() {
     return 'Q4';
   };
 
-  const currentActiveQuarter = ACTIVE_QUARTER;
+  const { 
+    activeQuarter: currentActiveQuarter, 
+    isCheckinPhase, 
+    activePhase, 
+    loading: cycleLoading 
+  } = useCycle();
+
   const {
     achievements,
     activeQuarter,
+    setActiveQuarter,
     loading: achievementsLoading,
     error: achievementsError,
     fetchAchievements,
@@ -168,11 +175,31 @@ setSavedGoalId(goal.id);
 
   const hasLoadedData = goals.length > 0 && Object.keys(rowInputs).length > 0;
 
-  if ((goalsLoading || achievementsLoading) && !hasLoadedData) {
+  if (cycleLoading || ((goalsLoading || achievementsLoading) && !hasLoadedData)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-12 h-12 text-[#A855F7] animate-spin mb-4" />
         <p className="text-white/60 font-medium">Loading quarterly objectives & achievements...</p>
+      </div>
+    );
+  }
+
+  if (!isCheckinPhase) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-[#0A0510]/40 border border-white/10 rounded-3xl backdrop-blur-md relative overflow-hidden shadow-2xl space-y-6">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#A855F7] to-indigo-500" />
+        <div className="w-16 h-16 bg-[#A855F7]/10 border border-[#A855F7]/20 text-[#A855F7] rounded-full flex items-center justify-center shadow-lg shadow-[#A855F7]/5 animate-pulse">
+          <Lock size={28} />
+        </div>
+        <div className="space-y-2 max-w-md">
+          <h2 className="text-2xl font-bold text-white tracking-tight">Check-Ins Locked</h2>
+          <p className="text-white/60 text-sm leading-relaxed">
+            Quarterly check-ins are only available during Q1-Q4 phases.
+          </p>
+        </div>
+        <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs font-semibold text-white/45 uppercase tracking-wider font-mono">
+          Current Phase: <span className="text-[#A855F7] font-bold">{activePhase || 'None'}</span>
+        </div>
       </div>
     );
   }
@@ -199,10 +226,10 @@ setSavedGoalId(goal.id);
       <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
         {quarters.map((q) => {
           const qIndex = quarters.indexOf(q);
-          const activeIdx = quarters.indexOf(ACTIVE_QUARTER);
+          const activeIdx = quarters.indexOf(currentActiveQuarter);
           const isFuture = qIndex > activeIdx;
           const isSelected = q === activeQuarter;
-          const isCurrentActive = q === ACTIVE_QUARTER;
+          const isCurrentActive = q === currentActiveQuarter;
 
           return (
             <button
@@ -314,7 +341,7 @@ setSavedGoalId(goal.id);
                         <input
                           type="number"
                           value={inputs.planned}
-                          disabled={activeQuarter !== ACTIVE_QUARTER}
+                          disabled={activeQuarter !== currentActiveQuarter}
                           onChange={(e) => handleInputChange(goal.id, 'planned', e.target.value)}
                           placeholder="Expected"
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-center text-white placeholder-white/20 focus:outline-none focus:border-[#A855F7]/50 focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-mono text-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -327,7 +354,7 @@ setSavedGoalId(goal.id);
                           <input
                             type="number"
                             value={inputs.actual}
-                            disabled={activeQuarter !== ACTIVE_QUARTER}
+                            disabled={activeQuarter !== currentActiveQuarter}
                             onChange={(e) => handleInputChange(goal.id, 'actual', e.target.value)}
                             placeholder="Reached"
                             className="w-[90px] bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-center text-white placeholder-white/20 focus:outline-none focus:border-[#A855F7]/50 focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-mono text-sm font-semibold text-[#A855F7] disabled:opacity-50 disabled:cursor-not-allowed"
@@ -365,7 +392,7 @@ setSavedGoalId(goal.id);
                       <td className="p-4 text-center">
                         <select
                           value={inputs.status}
-                          disabled={activeQuarter !== ACTIVE_QUARTER}
+                          disabled={activeQuarter !== currentActiveQuarter}
                           onChange={(e) => handleInputChange(goal.id, 'status', e.target.value)}
                           className="w-full bg-[#0F0A18] border border-white/10 rounded-xl px-3 py-1.5 text-white/80 text-xs font-semibold focus:outline-none focus:border-[#A855F7]/50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -382,7 +409,7 @@ setSavedGoalId(goal.id);
                         <input
                           type="text"
                           value={inputs.employee_comments}
-                          disabled={activeQuarter !== ACTIVE_QUARTER}
+                          disabled={activeQuarter !== currentActiveQuarter}
                           onChange={(e) => handleInputChange(goal.id, 'employee_comments', e.target.value)}
                           placeholder="Log progress comments..."
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-white placeholder-white/20 focus:outline-none focus:border-[#A855F7]/50 focus:ring-1 focus:ring-[#A855F7]/30 transition-all text-xs disabled:opacity-50 disabled:cursor-not-allowed"
@@ -391,7 +418,7 @@ setSavedGoalId(goal.id);
 
                       {/* Save Action */}
                       <td className="p-4 text-right">
-                        {activeQuarter !== ACTIVE_QUARTER ? (
+                        {activeQuarter !== currentActiveQuarter ? (
                           <span className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 text-white/40 px-3 py-1.5 rounded-xl text-xs font-semibold">
                             <Lock size={12} className="shrink-0" />
                             Locked (Read-Only)

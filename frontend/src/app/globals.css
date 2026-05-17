@@ -1,26 +1,57 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-smooch-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Max-readability scale for condensed Smooch Sans globally */
+  --text-xs: 0.9rem;      /* The perfect middle ground: highly readable but neat */
+  --text-sm: 1.0rem;
+  --text-base: 1.1rem;
+  --text-lg: 1.2rem;
+  --text-xl: 1.3rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.7rem;
+  --text-4xl: 1.9rem;
+  --text-5xl: 2.1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Bulletproof scrollbar suppression on all elements, viewports, and custom scroll containers */
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+html, body, #__next, [data-reactroot], main, section, div {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-smooch-sans), Arial, Helvetica, sans-serif;
+  font-size: 20px;
+  scrollbar-width: none !important;
 }

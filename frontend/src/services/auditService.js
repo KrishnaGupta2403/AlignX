@@ -35,10 +35,20 @@ export const getAuditLogs = async (filters = {}) => {
   let query = supabase
     .from('audit_logs')
     .select(`
-      *,
+      id,
+      created_at,
+      user_id,
+      user_role,
+      action,
+      table_name,
+      record_id,
+      old_value,
+      new_value,
+      description,
       user:profiles!user_id(name, email, role)
     `)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(200);
 
   if (filters.action) query = query.eq('action', filters.action);
   if (filters.tableName) query = query.eq('table_name', filters.tableName);

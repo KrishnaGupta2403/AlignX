@@ -33,6 +33,10 @@ export default function AdminReportsPage() {
   // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+
+  // Pagination State (20 items per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
   
   // Detail Modal State
   const [selectedSheet, setSelectedSheet] = useState<any | null>(null);
@@ -49,7 +53,7 @@ export default function AdminReportsPage() {
       // Update local state immediately
       setSheets(prev => prev.map(s => {
         if (s.id === sheetId) {
-          return { ...s, isLocked: false, status: 'Draft' };
+          return { ...s, isLocked: false, is_locked: false, status: 'Draft' };
         }
         return s;
       }));
@@ -99,6 +103,7 @@ export default function AdminReportsPage() {
     }
 
     setFilteredSheets(result);
+    setCurrentPage(1); // Reset to page 1 when filter parameters are modified
   }, [searchQuery, statusFilter, sheets]);
 
   // Export handlers
@@ -265,14 +270,24 @@ export default function AdminReportsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredSheets.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-12 text-center text-white/30 text-sm">
-                      No goal sheets match your search criteria.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredSheets.map((sheet, index) => (
+                {(() => {
+                  const totalPages = Math.ceil(filteredSheets.length / itemsPerPage) || 1;
+                  const paginatedSheets = filteredSheets.slice(
+                    (currentPage - 1) * itemsPerPage,
+                    currentPage * itemsPerPage
+                  );
+
+                  if (filteredSheets.length === 0) {
+                    return (
+                      <tr>
+                        <td colSpan={5} className="py-12 text-center text-white/30 text-sm">
+                          No goal sheets match your search criteria.
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return paginatedSheets.map((sheet, index) => (
                     <tr key={sheet.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                       <td className="py-4 px-4 font-medium text-white flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-[#A855F7]/10 flex items-center justify-center font-bold text-xs text-[#A855F7]">
@@ -291,7 +306,7 @@ export default function AdminReportsPage() {
                         </span>
                       </td>
                       <td className="py-4 px-4 text-right flex items-center justify-end gap-2">
-                        {sheet.isLocked && (
+                        {(sheet.is_locked || sheet.isLocked) && (
                           <button
                             onClick={() => handleUnlock(sheet.id)}
                             disabled={unlockingId === sheet.id}
@@ -314,11 +329,45 @@ export default function AdminReportsPage() {
                         </button>
                       </td>
                     </tr>
-                  ))
-                )}
+                  ));
+                })()}
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {(() => {
+            const totalPages = Math.ceil(filteredSheets.length / itemsPerPage) || 1;
+            if (totalPages <= 1) return null;
+            return (
+              <div className="flex flex-col sm:flex-row justify-between items-center mt-6 pt-6 border-t border-white/5 gap-4">
+                <p className="text-xs text-white/50">
+                  Showing <span className="text-white font-semibold font-mono">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+                  <span className="text-white font-semibold font-mono">{Math.min(currentPage * itemsPerPage, filteredSheets.length)}</span> of{' '}
+                  <span className="text-white font-semibold font-mono">{filteredSheets.length}</span> goal sheets
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold rounded-xl transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-xs text-white/60 font-semibold px-3 py-1.5 bg-white/5 border border-white/5 rounded-xl font-mono">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold rounded-xl transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
       </div>

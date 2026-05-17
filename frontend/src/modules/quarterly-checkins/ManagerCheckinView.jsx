@@ -4,8 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { getTeamGoalSheets, getGoalsBySheet } from '@/services/approvalService';
 import { getAchievements, getCheckins, addManagerCheckin, upsertAchievement } from '@/services/achievementService';
-import { ACTIVE_QUARTER } from '@/utils/constants';
+import { useCycle } from '@/hooks/useCycle';
 import { logAudit } from '@/services/auditService';
+import { calculateProgress } from '@/services/progressService';
+import { sendNotification } from '@/services/notificationService';
 import { 
   Users, 
   Calendar, 
@@ -33,7 +35,8 @@ export default function ManagerCheckinView() {
     return 'Q4';
   };
 
-  const defaultQuarter = ACTIVE_QUARTER;
+  const { activeQuarter: ACTIVE_QUARTER } = useCycle();
+const defaultQuarter = ACTIVE_QUARTER;
   const [activeQuarter, setActiveQuarter] = useState(defaultQuarter);
   const [teamSheets, setTeamSheets] = useState([]);
   const [expandedSheetId, setExpandedSheetId] = useState(null);
@@ -101,11 +104,14 @@ export default function ManagerCheckinView() {
     setFeedbackInput('');
     setSuccessMsg(null);
     try {
-      const [goals, achievements, checkins] = await Promise.all([
-        getGoalsBySheet(sheetId),
-        getAchievements(sheetId, activeQuarter),
-        getCheckins(sheetId, activeQuarter)
-      ]);
+      console.log('Fetching with quarter:', activeQuarter);
+const [goals, achievements, checkins] = await Promise.all([
+  getGoalsBySheet(sheetId),
+  getAchievements(sheetId, activeQuarter),
+  getCheckins(sheetId, activeQuarter)
+]);
+console.log('Goals fetched:', goals);
+console.log('Achievements fetched:', achievements);
 
       setExpandedData({ goals, achievements, checkins });
 
@@ -243,7 +249,7 @@ export default function ManagerCheckinView() {
         goal_sheet_id: expandedSheetId,
         employee_id: sheet.employee_id,
         quarter: activeQuarter,
-        manager_comments: feedbackInput,
+        comments: feedbackInput,
         rating: feedbackRating,
         manager_id: user.id
       };
@@ -259,6 +265,17 @@ export default function ManagerCheckinView() {
         newValue: { comments: feedbackInput, rating: feedbackRating },
         description: `Manager submitted check-in for ${activeQuarter}`
       });
+
+      // Notify the employee whose sheet was reviewed
+      if (sheet?.employee_id) {
+        await sendNotification({
+          userId: sheet.employee_id,
+          title: 'Manager Check-in Submitted',
+          message: `Your manager has submitted their ${activeQuarter} check-in review. Check your progress updates.`,
+          type: 'info',
+          link: '/employee/checkin'
+        });
+      }
 
       // 3. Clear drafts from localStorage
       try {
@@ -435,7 +452,12 @@ export default function ManagerCheckinView() {
                             <tbody className="divide-y divide-white/5 text-sm">
                               {expandedData.goals.map((goal) => {
                                 const achievement = expandedData.achievements.find(a => a.goal_id === goal.id);
-                                const progressPct = achievement ? achievement.progress_score : 0;
+                                const progressPct = achievement?.progress_score 
+                                  ? Number(achievement.progress_score) 
+                                  : achievement 
+                                    ? calculateProgress(goal.uom_type, goal.target, achievement.actual)
+                                    : 0;
+                                console.log('achievement progress_score:', achievement?.progress_score, 'progressPct:', progressPct);
 
                                 return (
                                   <tr key={goal.id} className="hover:bg-white/[0.01] align-middle">

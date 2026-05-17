@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { logAudit } from '@/services/auditService';
+import { sendNotification } from '@/services/notificationService';
 
 /**
  * Fetch all Submitted goal sheets where manager_id matches the authenticated manager.
@@ -10,9 +11,10 @@ export const getTeamGoalSheets = async (managerId) => {
     .from('goal_sheets')
     // We fetch the employee profile data so the manager knows whose sheet it is
     // We also fetch the attached goals to calculate the total count and weightage quickly
-    .select('*, employee:profiles!employee_id(name), goals(weightage)')
+    .select('id, created_at, updated_at, employee_id, status, manager_id, cycle_id, is_locked, employee:profiles!employee_id(name), goals(weightage)')
     .eq('manager_id', managerId)
-    .order('updated_at', { ascending: false });
+    .order('updated_at', { ascending: false })
+    .limit(50);
 
   if (error) {
     console.error('Error fetching team goal sheets:', error);
@@ -27,9 +29,10 @@ export const getTeamGoalSheets = async (managerId) => {
 export const getGoalsBySheet = async (goalSheetId) => {
   const { data, error } = await supabase
     .from('goals')
-    .select('*')
+    .select('id, goal_sheet_id, title, description, weightage, target, uom_type, status, created_at')
     .eq('goal_sheet_id', goalSheetId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(20);
 
   if (error) {
     console.error('Error fetching goals by sheet:', error);
@@ -50,7 +53,7 @@ export const approveGoalSheet = async (goalSheetId, managerId, comments = '') =>
       is_locked: true 
     })
     .eq('id', goalSheetId)
-    .select()
+    .select('id, employee_id, status, is_locked')
     .single();
 
   if (sheetError) {
@@ -94,6 +97,17 @@ export const approveGoalSheet = async (goalSheetId, managerId, comments = '') =>
     description: `Manager approved goal sheet`
   });
 
+  const employeeId = sheetData?.employee_id;
+  if (employeeId) {
+    await sendNotification({
+      userId: employeeId,
+      title: 'Goal Sheet Approved',
+      message: 'Your goal sheet has been approved by your manager. You can now start logging quarterly achievements.',
+      type: 'success',
+      link: '/employee/checkin'
+    });
+  }
+
   return sheetData;
 };
 
@@ -106,7 +120,7 @@ export const rejectGoalSheet = async (goalSheetId, managerId, comments = '') => 
     .from('goal_sheets')
     .update({ status: 'Rejected' })
     .eq('id', goalSheetId)
-    .select()
+    .select('id, employee_id, status')
     .single();
 
   if (sheetError) {
@@ -150,6 +164,17 @@ export const rejectGoalSheet = async (goalSheetId, managerId, comments = '') => 
     description: `Manager rejected goal sheet with comments: ${comments}`
   });
 
+  const employeeId = sheetData?.employee_id;
+  if (employeeId) {
+    await sendNotification({
+      userId: employeeId,
+      title: 'Goal Sheet Rejected',
+      message: `Your goal sheet has been rejected. Reason: ${comments}. Please review and resubmit.`,
+      type: 'error',
+      link: '/employee/goals'
+    });
+  }
+
   return sheetData;
 };
 
@@ -161,7 +186,7 @@ export const updateGoalInline = async (goalId, updatedData) => {
     .from('goals')
     .update(updatedData)
     .eq('id', goalId)
-    .select()
+    .select('id, goal_sheet_id, title, description, weightage, target, uom_type, status, created_at')
     .single();
 
   if (error) {
@@ -185,7 +210,7 @@ export const unlockGoalSheet = async (goalSheetId, adminId) => {
     is_locked: false
   })
   .eq('id', goalSheetId)
-  .select();
+  .select('id, employee_id, status, is_locked');
 
   if (error) {
     console.error('Error unlocking goal sheet:', error);

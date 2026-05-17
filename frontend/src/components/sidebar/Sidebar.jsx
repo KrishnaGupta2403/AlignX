@@ -12,7 +12,9 @@ import {
   FileText,
   LogOut,
   BarChart3,
-  ShieldCheck
+  ShieldCheck,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -28,6 +30,8 @@ export default function Sidebar() {
       { name: 'System Reports', path: '/admin/reports', icon: FileText },
       { name: 'Manage Users', path: '/admin/users', icon: Users },
       { name: 'Audit Trail', path: '/admin/audit', icon: ShieldCheck },
+      { name: 'Escalations', path: '/admin/escalations', icon: AlertTriangle },
+      { name: 'Cycle Management', path: '/admin/cycles', icon: RefreshCw },
     ],
     manager: [
       { name: 'Dashboard', path: '/manager/dashboard', icon: LayoutDashboard },

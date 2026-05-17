@@ -23,7 +23,7 @@ export const useCheckins = (initialQuarter = 'Q1') => {
     if (cached) {
       setAchievements(cached);
     } else {
-      setLoading(true);
+      if (!achievements.length) setLoading(true);
     }
     
     setError(null);
@@ -46,7 +46,7 @@ export const useCheckins = (initialQuarter = 'Q1') => {
    * Directly save/upsert an achievement record
    */
   const saveAchievement = useCallback(async (achievementData) => {
-    setLoading(true);
+    if (!achievements.length) setLoading(true);
     setError(null);
     try {
       const data = await achievementService.upsertAchievement(achievementData);
@@ -84,7 +84,7 @@ export const useCheckins = (initialQuarter = 'Q1') => {
    */
   const calculateAndSaveProgress = useCallback(async ({ goalId, goalSheetId, uomType, target, actual }) => {
     setError(null);
-    setLoading(true);
+    if (!achievements.length) setLoading(true);
     try {
       // Calculate progress percentage using progressService
       const progressPercent = calculateProgress(uomType, target, actual);

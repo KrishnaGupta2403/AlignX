@@ -12,7 +12,7 @@ export const useApprovals = () => {
    */
   const fetchTeamSheets = useCallback(async (managerId) => {
     if (!managerId) return;
-    setLoading(true);
+    if (!teamSheets.length) setLoading(true);
     setError(null);
     try {
       const sheets = await approvalService.getTeamGoalSheets(managerId);
@@ -32,7 +32,7 @@ export const useApprovals = () => {
    */
   const fetchSheetGoals = useCallback(async (goalSheetId) => {
     if (!goalSheetId) return;
-    setLoading(true);
+    if (!teamSheets.length) setLoading(true);
     setError(null);
     try {
       const goals = await approvalService.getGoalsBySheet(goalSheetId);
@@ -51,7 +51,7 @@ export const useApprovals = () => {
    * Approve a goal sheet and remove it from the pending view
    */
   const approveSheet = useCallback(async (goalSheetId, managerId, comments = '') => {
-    setLoading(true);
+    if (!teamSheets.length) setLoading(true);
     setError(null);
     try {
       const result = await approvalService.approveGoalSheet(goalSheetId, managerId, comments);
@@ -76,7 +76,7 @@ export const useApprovals = () => {
    * Reject a goal sheet and remove it from the pending view
    */
   const rejectSheet = useCallback(async (goalSheetId, managerId, comments = '') => {
-    setLoading(true);
+    if (!teamSheets.length) setLoading(true);
     setError(null);
     try {
       const result = await approvalService.rejectGoalSheet(goalSheetId, managerId, comments);
@@ -101,7 +101,7 @@ export const useApprovals = () => {
    * Manager edits a goal's target or weightage inline before making a decision
    */
   const updateGoal = useCallback(async (goalId, updatedData) => {
-    setLoading(true);
+    if (!teamSheets.length) setLoading(true);
     setError(null);
     try {
       const updatedGoal = await approvalService.updateGoalInline(goalId, updatedData);

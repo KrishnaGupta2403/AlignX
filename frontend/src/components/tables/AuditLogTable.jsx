@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Database, 
   Calendar, 
@@ -21,6 +21,15 @@ export default function AuditLogTable({ logs = [] }) {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [tableFilter, setTableFilter] = useState('');
+  
+  // Pagination State (20 items per page)
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  // Reset to first page when any filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, actionFilter, userFilter, fromDate, toDate, tableFilter]);
   
   // Modal State for Expandable JSON viewer
   const [modalData, setModalData] = useState(null); // { title: string, data: any }
@@ -278,14 +287,24 @@ export default function AuditLogTable({ logs = [] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-sm">
-              {filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="p-12 text-center text-white/40 italic">
-                    No matching audit logs found. Try adjusting your filters.
-                  </td>
-                </tr>
-              ) : (
-                filteredLogs.map((log) => {
+              {(() => {
+                const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1;
+                const paginatedLogs = filteredLogs.slice(
+                  (currentPage - 1) * itemsPerPage,
+                  currentPage * itemsPerPage
+                );
+
+                if (filteredLogs.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={8} className="p-12 text-center text-white/40 italic">
+                        No matching audit logs found. Try adjusting your filters.
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return paginatedLogs.map((log) => {
                   const timestampStr = log.created_at
                     ? new Date(log.created_at).toLocaleString()
                     : '-';
@@ -367,12 +386,46 @@ export default function AuditLogTable({ logs = [] }) {
                       </td>
                     </tr>
                   );
-                })
-              )}
+                });
+              })()}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {(() => {
+        const totalPages = Math.ceil(filteredLogs.length / itemsPerPage) || 1;
+        if (totalPages <= 1) return null;
+        return (
+          <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 bg-[#0A0510]/80 border border-white/10 rounded-2xl gap-4 shadow-xl">
+            <p className="text-xs text-white/50">
+              Showing <span className="text-white font-semibold font-mono">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+              <span className="text-white font-semibold font-mono">{Math.min(currentPage * itemsPerPage, filteredLogs.length)}</span> of{' '}
+              <span className="text-white font-semibold font-mono">{filteredLogs.length}</span> audit logs
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold rounded-xl transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer flex items-center gap-1"
+              >
+                Previous
+              </button>
+              <span className="text-xs text-white/60 font-semibold px-3 py-1.5 bg-white/5 border border-white/5 rounded-xl font-mono">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold rounded-xl transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer flex items-center gap-1"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Expandable JSON Viewer Modal Popup overlay */}
       {modalData && (

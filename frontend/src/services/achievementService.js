@@ -9,9 +9,10 @@ export const getAchievements = async (goalSheetId, quarter) => {
 
   const { data, error } = await supabase
     .from('achievements')
-    .select('*')
+    .select('id, goal_id, goal_sheet_id, quarter, actual, employee_comments, created_at, updated_at')
     .eq('goal_sheet_id', goalSheetId)
-    .eq('quarter', quarter);
+    .eq('quarter', quarter)
+    .limit(50);
 
   if (error) {
     console.error('Error fetching achievements:', error);
@@ -49,10 +50,11 @@ export const getCheckins = async (goalSheetId, quarter) => {
 
   const { data, error } = await supabase
     .from('checkins')
-    .select('*')
+    .select('id, goal_sheet_id, quarter, manager_id, comments, status, created_at')
     .eq('goal_sheet_id', goalSheetId)
     .eq('quarter', quarter)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(20);
 
   if (error) {
     console.error('Error fetching manager checkins:', error);

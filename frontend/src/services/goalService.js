@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { sendNotification } from '@/services/notificationService';
 
 /**
  * Fetch employee's current goal sheet.
@@ -6,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 export const getGoalSheet = async (employeeId) => {
   const { data, error } = await supabase
     .from('goal_sheets')
-    .select('*')
+    .select('id, created_at, employee_id, status, manager_id, cycle_id, is_locked, cycle:cycles(name)')
     .eq('employee_id', employeeId)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -22,11 +23,15 @@ export const getGoalSheet = async (employeeId) => {
 /**
  * Create a new goal sheet with Draft status.
  */
-export const createGoalSheet = async (employeeId) => {
+export const createGoalSheet = async (employeeId, cycleId) => {
   const { data, error } = await supabase
     .from('goal_sheets')
-    .insert([{ employee_id: employeeId, status: 'Draft' }])
-    .select()
+    .insert([{ 
+      employee_id: employeeId, 
+      status: 'Draft',
+      cycle_id: cycleId
+    }])
+    .select('id, created_at, employee_id, status, manager_id, cycle_id, is_locked')
     .single();
 
   if (error) {
@@ -44,9 +49,10 @@ export const getGoals = async (goalSheetId) => {
 
   const { data, error } = await supabase
     .from('goals')
-    .select('*')
+    .select('id, goal_sheet_id, title, description, weightage, target, uom_type, status, created_at')
     .eq('goal_sheet_id', goalSheetId)
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: true })
+    .limit(20);
 
   if (error) {
     console.error('Error fetching goals:', error);
@@ -62,7 +68,7 @@ export const createGoal = async (goalData) => {
   const { data, error } = await supabase
     .from('goals')
     .insert([goalData])
-    .select()
+    .select('id, goal_sheet_id, title, description, weightage, target, uom_type, status, created_at')
     .single();
 
   if (error) {
@@ -80,7 +86,7 @@ export const updateGoal = async (goalId, updatedData) => {
     .from('goals')
     .update(updatedData)
     .eq('id', goalId)
-    .select()
+    .select('id, goal_sheet_id, title, description, weightage, target, uom_type, status, created_at')
     .single();
 
   if (error) {
@@ -98,7 +104,7 @@ export const deleteGoal = async (goalId) => {
     .from('goals')
     .delete()
     .eq('id', goalId)
-    .select();
+    .select('id, goal_sheet_id, title');
 
   if (error) {
     console.error('Error deleting goal:', error);
@@ -144,12 +150,24 @@ export const submitGoalSheet = async (goalSheetId, employeeId) => {
       manager_id: profile?.manager_id || null
     })
     .eq('id', goalSheetId)
-    .select()
+    .select('id, created_at, employee_id, status, manager_id, cycle_id, is_locked')
     .single();
 
   if (error) {
     console.error('Error submitting goal sheet:', error);
     throw error;
   }
+
+  // Fetch manager_id from profile then notify manager
+  if (profile?.manager_id) {
+    await sendNotification({
+      userId: profile.manager_id,
+      title: 'New Goal Sheet Submitted',
+      message: 'An employee has submitted their goal sheet for your review and approval.',
+      type: 'info',
+      link: '/manager/approvals'
+    });
+  }
+
   return data;
 };

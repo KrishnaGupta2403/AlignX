@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as goalService from '@/services/goalService';
 import { supabase } from '@/lib/supabase';
 import { logAudit } from '@/services/auditService';
+import { getActiveCycle } from '@/services/cycleService';
 
 // Global cache for goals to prevent unmounting/loading flickers on page-switches
 const goalsCache = {};
@@ -16,44 +17,48 @@ export const useGoals = (employeeId) => {
   const [error, setError] = useState(null);
 
   // Auto-fetch goals on component mount or when employeeId changes
+  const lastFetchedRef = useRef(null);
+const STALE_TIME = 5 * 60 * 1000; // 5 minutes
   useEffect(() => {
-    if (!employeeId) {
-      setLoading(false);
-      return;
-    }
+  if (!employeeId) {
+    setLoading(false);
+    return;
+  }
 
-    let isMounted = true;
-    
-    const fetchGoalsData = async () => {
-      if (!goalsCache[employeeId]?.loaded) {
-        setLoading(true);
-      }
-      setError(null);
+  // Don't refetch if tab just became visible again
+  const handleVisibilityChange = () => {};
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  let isMounted = true;
+  const fetchGoalsData = async () => {
+  // Skip refetch if data is fresh
+  const now = Date.now();
+  if (
+    lastFetchedRef.current && 
+    goals.length > 0 && 
+    now - lastFetchedRef.current < STALE_TIME
+  ) return;
+
+  if (!goals.length) setLoading(true);
+  setError(null);
       try {
         // Fetch the active goal sheet
         let sheet = await goalService.getGoalSheet(employeeId);
         
         if (!sheet) {
           // Auto-create on load if doesn't exist
-          sheet = await goalService.createGoalSheet(employeeId);
+          const cycle = await getActiveCycle();
+          sheet = await goalService.createGoalSheet(employeeId, cycle?.id);
         }
 
-        if (sheet) {
-          // If a sheet exists, fetch its goals
-          const fetchedGoals = await goalService.getGoals(sheet.id);
-          
-          // Save to global cache
-          goalsCache[employeeId] = {
-            goalSheet: sheet,
-            goals: fetchedGoals,
-            loaded: true
-          };
-
-          if (isMounted) {
-            setGoalSheet(sheet);
-            setGoals(fetchedGoals);
-          }
-        }
+       if (sheet) {
+  if (isMounted) setGoalSheet(sheet);
+  
+  const fetchedGoals = await goalService.getGoals(sheet.id);
+  if (isMounted) setGoals(fetchedGoals);
+  
+  lastFetchedRef.current = Date.now(); // ← add here after data is loaded
+}
       } catch (err) {
         if (isMounted) {
           setError(err.message || 'Failed to load goals data.');
@@ -66,10 +71,11 @@ export const useGoals = (employeeId) => {
 
     fetchGoalsData();
 
-    return () => {
-      isMounted = false;
-    };
-  }, [employeeId]);
+   return () => {
+  isMounted = false;
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+};
+}, [employeeId]);
 
   // Helper to update global cache
   const updateCache = useCallback((newSheet, newGoals) => {
@@ -122,7 +128,8 @@ export const useGoals = (employeeId) => {
 
       // If the employee doesn't have a goal sheet yet, automatically create one first
       if (!currentSheetId) {
-        const newSheet = await goalService.createGoalSheet(employeeId);
+        const cycle = await getActiveCycle();
+        const newSheet = await goalService.createGoalSheet(employeeId, cycle?.id);
         setGoalSheet(newSheet);
         activeSheet = newSheet;
         currentSheetId = newSheet.id;

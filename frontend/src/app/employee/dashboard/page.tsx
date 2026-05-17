@@ -11,13 +11,16 @@ import { Loader2, Send, AlertCircle, Lock, Calendar, Target } from 'lucide-react
 import { supabase } from '@/lib/supabase';
 import { getAchievements } from '@/services/achievementService';
 import { ACTIVE_QUARTER } from '@/utils/constants';
+import { useCycle } from '@/hooks/useCycle';
+import BorderGlow from '@/components/backgrounds/BorderGlow';
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
+  const { isGoalPhase, activePhase, loading: cycleLoading } = useCycle();
   const { 
     goalSheet, 
     goals, 
-    loading, 
+    loading: goalsLoading, 
     error, 
     addGoal, 
     editGoal, 
@@ -37,7 +40,8 @@ export default function EmployeeDashboard() {
   const isDraft = sheetStatus === 'Draft';
   const isRejected = sheetStatus === 'Rejected';
   const isLocked = goalSheet?.is_locked === true;
-  const isEditable = (isDraft || isRejected) && !isLocked;
+  const isEditable = (isDraft || isRejected) && !isLocked && isGoalPhase;
+  const loading = goalsLoading || cycleLoading;
 
   // Load achievement records for the active evaluation quarter
   useEffect(() => {
@@ -151,6 +155,29 @@ export default function EmployeeDashboard() {
     }
   });
 
+  // If not goal phase, show locked message
+  if (!isGoalPhase && !cycleLoading) {
+    return (
+      <EmployeeLayout>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-[#0A0510]/40 border border-white/10 rounded-3xl backdrop-blur-md relative overflow-hidden shadow-2xl space-y-6">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-indigo-500" />
+          <div className="w-16 h-16 bg-[#A855F7]/10 border border-[#A855F7]/20 text-[#A855F7] rounded-full flex items-center justify-center shadow-lg shadow-[#A855F7]/5 animate-pulse">
+            <Lock size={28} />
+          </div>
+          <div className="space-y-2 max-w-md">
+            <h2 className="text-2xl font-bold text-white tracking-tight">Goal Sheet Locked</h2>
+            <p className="text-white/60 text-sm leading-relaxed">
+              Goal submission is only available during the Goal Setting phase.
+            </p>
+          </div>
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-xs font-semibold text-white/45 uppercase tracking-wider font-mono">
+            Current Phase: <span className="text-[#A855F7] font-bold">{activePhase || 'None'}</span>
+          </div>
+        </div>
+      </EmployeeLayout>
+    );
+  }
+
   return (
     <EmployeeLayout>
       <div className="space-y-8">
@@ -159,7 +186,13 @@ export default function EmployeeDashboard() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/5 border border-white/10 rounded-2xl p-6">
           <div>
             <h1 className="text-3xl font-bold text-white mb-1">My Goal Sheet</h1>
-            <p className="text-white/60">Manage and track your performance objectives.</p>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-white/60 text-sm">
+              <span>Manage and track your performance objectives.</span>
+              <span className="hidden sm:inline w-1 h-1 rounded-full bg-white/20" />
+              <span className="inline-flex items-center gap-1 text-[#A855F7] font-semibold bg-[#A855F7]/10 border border-[#A855F7]/20 px-2.5 py-0.5 rounded-full text-xs font-mono">
+                Cycle: {goalSheet?.cycle?.name || 'FY 2025-26'}
+              </span>
+            </div>
           </div>
           
           <div className="flex items-center gap-4">
@@ -222,76 +255,115 @@ export default function EmployeeDashboard() {
         {goals.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Total Goals Card */}
-            <div className="bg-[#0A0510]/60 backdrop-blur-md border border-white/10 rounded-2xl p-6 flex flex-col justify-between shadow-xl relative overflow-hidden group">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Total Goals</p>
-                  <h3 className="text-4xl font-extrabold text-white mt-2 font-mono">{goals.length}</h3>
+            <BorderGlow
+              edgeSensitivity={20}
+              glowColor="270 80 70"
+              backgroundColor="rgba(10, 5, 16, 0.6)"
+              borderRadius={16}
+              glowRadius={40}
+              glowIntensity={1.0}
+              colors={['#A855F7', '#c084fc', '#8b5cf6']}
+              fillOpacity={0.1}
+            >
+              <div className="p-6 flex flex-col justify-between h-full relative overflow-hidden group">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Total Goals</p>
+                    <h3 className="text-4xl font-extrabold text-white mt-2 font-mono">{goals.length}</h3>
+                  </div>
+                  <div className="bg-[#A855F7]/10 border border-[#A855F7]/25 text-[#A855F7] p-2.5 rounded-xl">
+                    <Calendar size={20} />
+                  </div>
                 </div>
-                <div className="bg-[#A855F7]/10 border border-[#A855F7]/25 text-[#A855F7] p-2.5 rounded-xl">
-                  <Calendar size={20} />
-                </div>
+                <p className="text-[11px] text-white/40 mt-4">Goals registered for the current performance period</p>
               </div>
-              <p className="text-[11px] text-white/40 mt-4">Goals registered for the current performance period</p>
-            </div>
+            </BorderGlow>
 
             {/* Average Progress Score Card */}
-            <div className="bg-[#0A0510]/60 backdrop-blur-md border border-white/10 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Average Progress Score</p>
-                  <h3 className="text-4xl font-bold text-white mt-1 font-mono tracking-tight flex items-baseline gap-1">
-                    {averageProgress}%
-                  </h3>
+            <BorderGlow
+              edgeSensitivity={20}
+              glowColor={averageProgress >= 71 ? "140 80 70" : averageProgress >= 41 ? "40 80 70" : "0 80 70"}
+              backgroundColor="rgba(10, 5, 16, 0.6)"
+              borderRadius={16}
+              glowRadius={40}
+              glowIntensity={1.0}
+              colors={
+                averageProgress >= 71 
+                  ? ['#10B981', '#34D399', '#059669'] 
+                  : averageProgress >= 41 
+                  ? ['#F59E0B', '#FBBF24', '#D97706'] 
+                  : ['#EF4444', '#F87171', '#DC2626']
+              }
+              fillOpacity={0.1}
+            >
+              <div className="p-6 flex flex-col justify-between h-full">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Average Progress Score</p>
+                    <h3 className="text-4xl font-bold text-white mt-1 font-mono tracking-tight flex items-baseline gap-1">
+                      {averageProgress}%
+                    </h3>
+                  </div>
+                  <div className={`p-2.5 rounded-xl border ${
+                    averageProgress >= 71 
+                      ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' 
+                      : averageProgress >= 41 
+                      ? 'bg-amber-500/10 border-amber-500/25 text-amber-400' 
+                      : 'bg-rose-500/10 border-rose-500/25 text-rose-400'
+                  }`}>
+                    <Target size={20} />
+                  </div>
                 </div>
-                <div className={`p-2.5 rounded-xl border ${
-                  averageProgress >= 71 
-                    ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' 
-                    : averageProgress >= 41 
-                    ? 'bg-amber-500/10 border-amber-500/25 text-amber-400' 
-                    : 'bg-rose-500/10 border-rose-500/25 text-rose-400'
-                }`}>
-                  <Target size={20} />
+                <div className="mt-4 space-y-1.5">
+                  <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        averageProgress >= 71 
+                          ? 'bg-emerald-400' 
+                          : averageProgress >= 41 
+                          ? 'bg-amber-400' 
+                          : 'bg-rose-400'
+                      }`} 
+                      style={{ width: `${averageProgress}%` }}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="mt-4 space-y-1.5">
-                <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      averageProgress >= 71 
-                        ? 'bg-emerald-400' 
-                        : averageProgress >= 41 
-                        ? 'bg-amber-400' 
-                        : 'bg-rose-400'
-                    }`} 
-                    style={{ width: `${averageProgress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+            </BorderGlow>
 
             {/* Goals Completed Card */}
-            <div className="bg-[#0A0510]/60 backdrop-blur-md border border-white/10 rounded-2xl p-6 flex flex-col justify-between shadow-xl relative overflow-hidden group">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Goals Completed</p>
-                  <h3 className="text-4xl font-extrabold text-emerald-400 mt-2 font-mono">{counts.Completed}</h3>
+            <BorderGlow
+              edgeSensitivity={20}
+              glowColor="140 80 70"
+              backgroundColor="rgba(10, 5, 16, 0.6)"
+              borderRadius={16}
+              glowRadius={40}
+              glowIntensity={1.0}
+              colors={['#10B981', '#34D399', '#059669']}
+              fillOpacity={0.1}
+            >
+              <div className="p-6 flex flex-col justify-between h-full relative overflow-hidden group">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-white/40 text-xs uppercase tracking-wider font-semibold">Goals Completed</p>
+                    <h3 className="text-4xl font-extrabold text-emerald-400 mt-2 font-mono">{counts.Completed}</h3>
+                  </div>
+                  <div className="bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 p-2.5 rounded-xl">
+                    <span className="text-sm font-bold">100%</span>
+                  </div>
                 </div>
-                <div className="bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 p-2.5 rounded-xl">
-                  <span className="text-sm font-bold">100%</span>
-                </div>
+                <p className="text-[11px] text-white/40 mt-4">Goals that have hit 100% or greater progress levels</p>
               </div>
-              <p className="text-[11px] text-white/40 mt-4">Goals that have hit 100% or greater progress levels</p>
-            </div>
+            </BorderGlow>
           </div>
         )}
 
         {/* Main Content Area */}
-        {loading && !goals.length ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 size={32} className="text-[#A855F7] animate-spin" />
-          </div>
-        ) : (
+        {goalsLoading && !goals.length ? (
+            <div className="flex justify-center items-center py-20">
+              <Loader2 size={32} className="text-[#A855F7] animate-spin" />
+            </div>
+          ) : (
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
             
             {/* Form Section (Left column, takes 1/3 space on large screens, hides if submitted/approved) */}
