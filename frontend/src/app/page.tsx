@@ -1,11 +1,11 @@
 "use client";
 
-// import FloatingLines from '@/components/backgrounds/FloatingLines';
-import dynamic from 'next/dynamic';
-const FloatingLines = dynamic(
-  () => import('@/components/backgrounds/FloatingLines'),
-  { ssr: false, loading: () => <div /> }
-);
+import FloatingLines from '@/components/backgrounds/FloatingLines';
+// import dynamic from 'next/dynamic';
+// const FloatingLines = dynamic(
+//   () => import('@/components/backgrounds/FloatingLines'),
+//   { ssr: false, loading: () => <div /> }
+// );
 import { ArrowRight, Target, Activity, CheckSquare, ShieldCheck, Zap, Layers, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
