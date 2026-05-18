@@ -75,7 +75,7 @@ export default function SignupPage() {
     if (error) {
       setError(error.message);
     } else {
-      setSuccessMsg('Account created! Check your email to confirm your account, then sign in.');
+      setSuccessMsg('Account created');
     }
   };
 
