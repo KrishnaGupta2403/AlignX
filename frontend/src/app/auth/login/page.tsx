@@ -101,14 +101,14 @@ export default function LoginPage() {
     let targetEmail = '';
     let targetPassword = '';
     if (role === 'admin') {
-      targetEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || '';
-      targetPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '';
+      targetEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'krishnagupta241103@gmail.com';
+      targetPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '123456789';
     } else if (role === 'manager') {
-      targetEmail = process.env.NEXT_PUBLIC_MANAGER_EMAIL || '';
-      targetPassword = process.env.NEXT_PUBLIC_MANAGER_PASSWORD || '';
+      targetEmail = process.env.NEXT_PUBLIC_MANAGER_EMAIL || '2k23.csai2311676@gmail.com';
+      targetPassword = process.env.NEXT_PUBLIC_MANAGER_PASSWORD || '123456789';
     } else if (role === 'employee') {
-      targetEmail = process.env.NEXT_PUBLIC_EMPLOYEE_EMAIL || '';
-      targetPassword = process.env.NEXT_PUBLIC_EMPLOYEE_PASSWORD || '';
+      targetEmail = process.env.NEXT_PUBLIC_EMPLOYEE_EMAIL || 'kri853485@gmail.com';
+      targetPassword = process.env.NEXT_PUBLIC_EMPLOYEE_PASSWORD || '123456789';
     }
     setEmail(targetEmail);
     setPassword(targetPassword);
