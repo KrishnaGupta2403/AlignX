@@ -27,15 +27,21 @@ export default function LoginPage() {
     }
   }, []);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleLogin = async (customEmail?: string, customPassword?: string) => {
+    const emailToUse = typeof customEmail === 'string' ? customEmail : email;
+    const passwordToUse = typeof customPassword === 'string' ? customPassword : password;
+
+    if (!emailToUse || !passwordToUse) {
       setError('Please fill in all fields.');
       return;
     }
     setLoading(true);
     setError('');
 
-    const { data, error: authError } = await (supabase.auth as any).signInWithPassword({ email, password });
+    const { data, error: authError } = await (supabase.auth as any).signInWithPassword({
+      email: emailToUse,
+      password: passwordToUse
+    });
 
     if (authError) {
       setError(authError.message);
@@ -89,6 +95,24 @@ export default function LoginPage() {
       router.push('/employee/dashboard');
     }
     // Note: don't call setLoading(false) here since we're navigating away
+  };
+
+  const handleQuickLogin = async (role: 'admin' | 'manager' | 'employee') => {
+    let targetEmail = '';
+    let targetPassword = '';
+    if (role === 'admin') {
+      targetEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || '';
+      targetPassword = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '';
+    } else if (role === 'manager') {
+      targetEmail = process.env.NEXT_PUBLIC_MANAGER_EMAIL || '';
+      targetPassword = process.env.NEXT_PUBLIC_MANAGER_PASSWORD || '';
+    } else if (role === 'employee') {
+      targetEmail = process.env.NEXT_PUBLIC_EMPLOYEE_EMAIL || '';
+      targetPassword = process.env.NEXT_PUBLIC_EMPLOYEE_PASSWORD || '';
+    }
+    setEmail(targetEmail);
+    setPassword(targetPassword);
+    await handleLogin(targetEmail, targetPassword);
   };
 
   return (
@@ -167,7 +191,7 @@ export default function LoginPage() {
               </div>
 
               <button
-                onClick={handleLogin}
+                onClick={() => handleLogin()}
                 disabled={loading}
                 className="relative overflow-hidden group w-full bg-gradient-to-r from-[#A855F7] to-[#8a3fd6] text-white font-bold py-3 rounded-xl shadow-lg shadow-[#A855F7]/25 hover:shadow-[#A855F7]/40 transition-all flex items-center justify-center gap-2 mt-3 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
               >
@@ -175,6 +199,39 @@ export default function LoginPage() {
                 <span className="relative z-10">{loading ? 'Signing in...' : 'Sign In'}</span>
                 <ArrowRight size={18} className="relative z-10 group-hover:translate-x-1 transition-transform" />
               </button>
+
+              {/* Testing Roles Section */}
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <p className="text-center text-xs font-semibold text-white/40 tracking-wider uppercase mb-2.5">
+                  testing roles
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickLogin('admin')}
+                    disabled={loading}
+                    className="py-2 px-1 text-xs font-semibold rounded-lg bg-white/5 border border-white/10 text-white/80 hover:bg-[#A855F7]/20 hover:border-[#A855F7]/40 transition-all text-center disabled:opacity-50"
+                  >
+                    Admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickLogin('manager')}
+                    disabled={loading}
+                    className="py-2 px-1 text-xs font-semibold rounded-lg bg-white/5 border border-white/10 text-white/80 hover:bg-[#A855F7]/20 hover:border-[#A855F7]/40 transition-all text-center disabled:opacity-50"
+                  >
+                    Manager
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleQuickLogin('employee')}
+                    disabled={loading}
+                    className="py-2 px-1 text-xs font-semibold rounded-lg bg-white/5 border border-white/10 text-white/80 hover:bg-[#A855F7]/20 hover:border-[#A855F7]/40 transition-all text-center disabled:opacity-50"
+                  >
+                    Employee
+                  </button>
+                </div>
+              </div>
             </div>
 
             <p className="mt-7 text-center text-lg text-white/70">
