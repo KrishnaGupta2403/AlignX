@@ -605,7 +605,7 @@ const Hyperspeed = ({ effectOptions = DEFAULT_EFFECT_OPTIONS }) => {
           fogNear: { value: fog.near },
           fogFar: { value: fog.far }
         };
-        this.clock = new THREE.Timer();
+        this.clock = new THREE.Clock();
         this.assets = {};
         this.disposed = false;
 
