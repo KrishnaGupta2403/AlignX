@@ -18,6 +18,23 @@ import {
   ChevronsUpDown
 } from 'lucide-react';
 
+// Retry helper — silently retries failed requests up to maxRetries times.
+// Works with the AbortController fetch in supabase.js: the first frozen
+// request is aborted (kills the dead socket), then the retry gets a fresh connection.
+async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3, delayMs = 800): Promise<T> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      const isLastAttempt = attempt === maxRetries;
+      if (isLastAttempt) throw err;
+      console.log(`[Admin Users] Request attempt ${attempt} failed, retrying in ${delayMs}ms...`, err?.message);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error('All retries exhausted');
+}
+
 interface Profile {
   id: string;
   name: string | null;
@@ -68,23 +85,33 @@ export default function ManageUsersPage() {
     loadData();
   }, []);
 
+
+
   // Update a user's role
   const handleRoleChange = async (profileId: string, newRole: string) => {
+    console.log(`[Admin Users] Changing role for user ${profileId} to ${newRole}`);
     try {
       setUpdatingUserId(profileId);
       
-      // If changing from manager, we might want to reset their manager_id if they had one
+      // If changing from manager/employee, we might want to reset their manager_id if they had one
       const updates: any = { role: newRole };
       if (newRole !== 'employee') {
         updates.manager_id = null;
       }
 
-      const { error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', profileId);
+      const { error } = await retryWithBackoff(() =>
+        supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', profileId)
+          .then((res: any) => { if (res.error) throw res.error; return res; })
+      ) as any;
 
-      if (error) throw error;
+      if (error) {
+        console.error('[Admin Users] Database error updating role:', error);
+        throw error;
+      }
+      console.log('[Admin Users] Profiles table updated role successfully');
 
       // Update locally
       setProfiles(prev => prev.map(p => 
@@ -110,8 +137,9 @@ export default function ManageUsersPage() {
         setUpdateStatus(prev => ({ ...prev, [profileId]: null }));
       }, 2000);
 
-    } catch (err) {
-      console.error('Failed to update role:', err);
+    } catch (err: any) {
+      console.error('[Admin Users] Exception caught updating role:', err);
+      alert(`Failed to update role: ${err.message || err}`);
       setUpdateStatus(prev => ({ ...prev, [profileId]: 'error' }));
       setTimeout(() => {
         setUpdateStatus(prev => ({ ...prev, [profileId]: null }));
@@ -123,16 +151,33 @@ export default function ManageUsersPage() {
 
   // Assign a manager to an employee
   const handleManagerChange = async (profileId: string, managerId: string) => {
+    console.log(`[Admin Users] Changing manager for user ${profileId} to ${managerId}`);
     try {
       setUpdatingUserId(profileId);
       const dbValue = managerId === 'none' ? null : managerId;
 
-      const { error } = await supabase
-        .from('profiles')
-        .update({ manager_id: dbValue })
-        .eq('id', profileId);
+      // 1. Update the profiles table
+      await retryWithBackoff(() =>
+        supabase
+          .from('profiles')
+          .update({ manager_id: dbValue })
+          .eq('id', profileId)
+          .then((res: any) => { if (res.error) throw res.error; return res; })
+      );
+      console.log('[Admin Users] Profiles table updated successfully');
 
-      if (error) throw error;
+      // 2. Also update any active/submitted/approved goal sheets for this employee
+      await retryWithBackoff(() =>
+        supabase
+          .from('goal_sheets')
+          .update({ manager_id: dbValue })
+          .eq('employee_id', profileId)
+          .then((res: any) => {
+            if (res.error) console.warn('[Admin Users] goal_sheets update warning:', res.error);
+            return res;
+          })
+      ).catch(err => console.warn('[Admin Users] goal_sheets update non-blocking error:', err));
+      console.log('[Admin Users] Goal sheets table updated successfully');
 
       // Update locally
       setProfiles(prev => prev.map(p => p.id === profileId ? { ...p, manager_id: dbValue } : p));
@@ -143,8 +188,9 @@ export default function ManageUsersPage() {
         setUpdateStatus(prev => ({ ...prev, [profileId]: null }));
       }, 2000);
 
-    } catch (err) {
-      console.error('Failed to update manager:', err);
+    } catch (err: any) {
+      console.error('[Admin Users] Exception caught updating manager:', err);
+      alert(`Failed to assign manager: ${err?.message || err}`);
       setUpdateStatus(prev => ({ ...prev, [profileId]: 'error' }));
       setTimeout(() => {
         setUpdateStatus(prev => ({ ...prev, [profileId]: null }));

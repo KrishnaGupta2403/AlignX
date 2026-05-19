@@ -80,9 +80,13 @@ export function AuthProvider({ children }) {
           setUser(session.user);
           setSessionLoading(false); // Session is confirmed — unlock that gate
 
-          // Now fetch the real role from the DB (roleLoading stays true during this)
-          const resolvedRole = await fetchProfileRole(session.user);
-          if (mounted) setRole(resolvedRole);
+          // Move the profile role fetch to a separate tick of the event loop
+          // to completely avoid deadlocking navigator.locks inside the onAuthStateChange callback.
+          setTimeout(async () => {
+            if (!mounted) return;
+            const resolvedRole = await fetchProfileRole(session.user);
+            if (mounted) setRole(resolvedRole);
+          }, 0);
 
         } else {
           // No session at all
